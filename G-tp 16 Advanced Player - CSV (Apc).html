@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>🎵 Abridor de YouTube desde CSV</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
+            background-color: #1e1e2f; 
+            color: white;
+            margin: 20px;
+            padding-bottom: 20px;
+        }
+        h1 { 
+            color: #ff0000; 
+            margin-bottom: 10px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .youtube-btn {
+            background: #282828;
+            color: white;
+            border: 1px solid #3a3a5a;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .youtube-btn:hover {
+            background: #3a3a3a;
+            border-color: #ff0000;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a40;
+            border: 1px solid #3a3a5a;
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            flex: 1 1 auto;
+        }
+        button.secondary {
+            background: #3a3a5a;
+        }
+        button.tertiary {
+            background: #2a5a3a;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .file-input-container {
+            flex: 2;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: #2a2a40;
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 1px solid #3a3a5a;
+        }
+        .file-input-container label {
+            background: #3a3a5a;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+        .file-input-container label:hover {
+            background: #4a4a6a;
+        }
+        .file-input-container input {
+            display: none;
+        }
+        .file-name {
+            color: #aaa;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #stats {
+            background: #2a2a40;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .stats-left {
+            display: flex;
+            gap: 25px;
+        }
+        .stats-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .stats-number {
+            color: #ff0000;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        #lista-canciones { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0;
+            overflow-y: visible;
+        }
+        .song-item {
+            position: relative;
+            margin: 6px 0;
+        }
+        .song-content {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background-color: #2a2a40;
+            cursor: pointer;
+            border-radius: 8px;
+            border: 1px solid #3a3a5a;
+            padding-right: 60px;
+            transition: all 0.2s;
+        }
+        .song-content:hover { 
+            background-color: #3a3a5a;
+            border-color: #ff0000;
+        }
+        .song-item.abierta .song-content {
+            background-color: #4a2a3a;
+            border-color: #ffaa00;
+        }
+        .song-item.abierta .titulo::after {
+            content: " (📺)";
+            color: #ffaa00;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        img.thumbnail { 
+            width: 50px; 
+            height: 50px; 
+            margin-right: 15px; 
+            object-fit: cover; 
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .info { 
+            flex-grow: 1; 
+            overflow: hidden;
+        }
+        .titulo { 
+            font-weight: bold;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .artista { 
+            font-size: 14px; 
+            color: #aaa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .delete-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ff3333;
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(255,0,0,0.3);
+        }
+        .delete-btn:hover {
+            background: #cc0000;
+            transform: translateY(-50%) scale(1.1);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            background: #2a2a40;
+            border-radius: 8px;
+            color: #888;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎵 Abridor YouTube desde CSV</h1>
+        <button class="youtube-btn" onclick="guardarEnYouTube()">
+            <span>📺</span> Guardar lista
+        </button>
+    </div>
+
+    <!-- Nueva sección: Carga de archivo -->
+    <div class="file-input-container">
+        <label for="file-upload">📂 Seleccionar archivo CSV</label>
+        <input type="file" id="file-upload" accept=".csv, text/csv" onchange="cargarArchivoCSV(event)">
+        <span class="file-name" id="file-name">Ningún archivo seleccionado</span>
+    </div>
+
+    <p style="text-align: center; color: #aaa; margin: 10px 0;">— o pega el contenido manualmente —</p>
+    
+    <textarea id="csv-input" rows="4" placeholder="Pega aquí el contenido de tu archivo CSV..."></textarea>
+    
+    <div class="button-group">
+        <button onclick="cargarCSV()">📋 Cargar desde texto</button>
+        <button class="secondary" onclick="resetearTodo()">🔄 Resetear todo</button>
+    </div>
+    
+    <div id="stats" style="display: none;">
+        <div class="stats-left">
+            <div class="stats-item">📊 Total: <span class="stats-number" id="total">0</span></div>
+            <div class="stats-item">📺 Abiertas: <span class="stats-number" id="abiertas">0</span></div>
+            <div class="stats-item">🗑️ Eliminadas: <span class="stats-number" id="eliminadas">0</span></div>
+        </div>
+    </div>
+    
+    <ul id="lista-canciones"></ul>
+
+    <script>
+        let playlist = [];
+        
+        // Estado
+        let abiertas = JSON.parse(localStorage.getItem('abiertas') || '[]');
+        let eliminadas = JSON.parse(localStorage.getItem('eliminadas') || '[]');
+
+        // Nueva función: Cargar archivo CSV
+        function cargarArchivoCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileNameSpan = document.getElementById('file-name');
+            fileNameSpan.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const contenido = e.target.result;
+                document.getElementById('csv-input').value = contenido; // Opcional: lo muestra en el textarea
+                procesarContenidoCSV(contenido);
+            };
+            reader.readAsText(file);
+        }
+
+        // Función principal para procesar el contenido CSV (extraída de cargarCSV)
+        function procesarContenidoCSV(texto) {
+            if (!texto.trim()) {
+                alert('El archivo está vacío');
+                return;
+            }
+            
+            let lineas = texto.split('\n');
+            let headers = lineas[0].split(',');
+            
+            let idxId = headers.findIndex(h => h.trim() === 'MediaId');
+            let idxTitle = headers.findIndex(h => h.trim() === 'Title');
+            let idxArtist = headers.findIndex(h => h.trim() === 'Artists');
+            let idxThumb = headers.findIndex(h => h.trim() === 'ThumbnailUrl');
+            
+            if (idxId === -1) {
+                alert('No se encontró la columna "MediaId" en el archivo CSV.');
+                return;
+            }
+            
+            let nuevasCanciones = [];
+            
+            for (let i = 1; i < lineas.length; i++) {
+                if (!lineas[i].trim()) continue;
+                
+                // Parseo simple que funciona con tu CSV
+                let cols = [];
+                let inQuote = false;
+                let current = '';
+                
+                for (let char of lineas[i]) {
+                    if (char === '"') {
+                        inQuote = !inQuote;
+                    } else if (char === ',' && !inQuote) {
+                        cols.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                cols.push(current);
+                
+                let videoId = cols[idxId]?.replace(/^"|"$/g, '').trim();
+                
+                // Extraer ID si es URL
+                let match = videoId?.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([^&?/]{11})/);
+                if (match) videoId = match[1];
+                
+                if (videoId && videoId.length === 11) {
+                    nuevasCanciones.push({
+                        id: videoId,
+                        title: cols[idxTitle]?.replace(/^"|"$/g, '') || 'Sin título',
+                        artist: cols[idxArtist]?.replace(/^"|"$/g, '') || 'Desconocido',
+                        thumbnail: cols[idxThumb]?.replace(/^"|"$/g, '') || ''
+                    });
+                }
+            }
+            
+            // Filtrar eliminadas
+            playlist = nuevasCanciones.filter(s => !eliminadas.includes(s.id));
+            
+            if (playlist.length === 0) {
+                alert('No se encontraron videos válidos en el archivo.');
+                return;
+            }
+            
+            actualizarLista();
+            document.getElementById('stats').style.display = 'flex';
+            actualizarStats();
+            
+            // Guardar CSV
+            localStorage.setItem('ultimoCSV', texto);
+        }
+
+        function cargarCSV() {
+            let texto = document.getElementById('csv-input').value;
+            procesarContenidoCSV(texto);
+        }
+
+        function actualizarLista() {
+            let lista = document.getElementById('lista-canciones');
+            lista.innerHTML = '';
+            
+            if (playlist.length === 0) {
+                lista.innerHTML = '<div class="empty-state">🎵 No hay canciones. Carga un archivo CSV para empezar.</div>';
+                return;
+            }
+            
+            playlist.forEach(cancion => {
+                let li = document.createElement('li');
+                li.className = 'song-item';
+                li.id = `song-${cancion.id}`;
+                
+                if (abiertas.includes(cancion.id)) {
+                    li.classList.add('abierta');
+                }
+                
+                let thumbUrl = cancion.thumbnail || `https://img.youtube.com/vi/${cancion.id}/default.jpg`;
+                
+                li.innerHTML = `
+                    <div class="song-content" onclick="abrirEnYouTube('${cancion.id}')">
+                        <img class="thumbnail" src="${thumbUrl}" 
+                             onerror="this.src='https://img.youtube.com/vi/${cancion.id}/default.jpg'">
+                        <div class="info">
+                            <span class="titulo">${cancion.title}</span>
+                            <div class="artista">${cancion.artist}</div>
+                        </div>
+                    </div>
+                    <button class="delete-btn" onclick="eliminar('${cancion.id}', event)">🗑️</button>
+                `;
+                lista.appendChild(li);
+            });
+            
+            actualizarStats();
+        }
+
+        function abrirEnYouTube(id) {
+            // Marcar como abierta
+            if (!abiertas.includes(id)) {
+                abiertas.push(id);
+                localStorage.setItem('abiertas', JSON.stringify(abiertas));
+                actualizarLista();
+            }
+            
+            // Detectar si es Android
+            let isAndroid = /Android/i.test(navigator.userAgent);
+            
+            if (isAndroid) {
+                // SOLUCIÓN DEFINITIVA: Usar vnd.youtube: para que el sistema decida
+                window.location.href = `vnd.youtube:${id}`;
+            } else {
+                // En otros dispositivos: abrir en nueva pestaña
+                window.open(`https://youtu.be/${id}`, '_blank');
+            }
+        }
+
+        function eliminar(id, event) {
+            event.stopPropagation();
+            
+            if (!eliminadas.includes(id)) {
+                eliminadas.push(id);
+                localStorage.setItem('eliminadas', JSON.stringify(eliminadas));
+                
+                playlist = playlist.filter(s => s.id !== id);
+                actualizarLista();
+                actualizarStats();
+            }
+        }
+
+        function guardarEnYouTube() {
+            if (playlist.length === 0) {
+                alert('Primero carga algunas canciones');
+                return;
+            }
+            
+            let ids = playlist.map(s => s.id).join(',');
+            let url = `https://www.youtube.com/watch_videos?video_ids=${ids}`;
+            
+            window.open(url, '_blank');
+            
+            // Copiar al portapapeles
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ Lista creada\nEl enlace se copió al portapapeles');
+            }).catch(() => {
+                alert('✅ Lista creada en YouTube');
+            });
+        }
+
+        function resetearTodo() {
+            if (confirm('¿Resetear todo el progreso?')) {
+                abiertas = [];
+                eliminadas = [];
+                localStorage.clear();
+                playlist = [];
+                document.getElementById('csv-input').value = '';
+                document.getElementById('lista-canciones').innerHTML = '';
+                document.getElementById('stats').style.display = 'none';
+                document.getElementById('file-name').textContent = 'Ningún archivo seleccionado';
+                document.getElementById('file-upload').value = ''; // Limpiar input file
+            }
+        }
+
+        function actualizarStats() {
+            document.getElementById('total').textContent = playlist.length;
+            document.getElementById('abiertas').textContent = abiertas.length;
+            document.getElementById('eliminadas').textContent = eliminadas.length;
+        }
+
+        // Cargar CSV guardado (del localStorage)
+        window.addEventListener('load', function() {
+            let ultimo = localStorage.getItem('ultimoCSV');
+            if (ultimo) {
+                document.getElementById('csv-input').value = ultimo;
+                cargarCSV();
+            }
+        });
+    </script>
+</body>
+</html>
