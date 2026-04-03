@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎵 Crear Playlist YouTube</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f0f13;
+    color: #e8e8f0;
+    min-height: 100vh;
+  }
+
+  .top-bar {
+    background: #1a1a24;
+    border-bottom: 1px solid #2a2a3a;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-wrap: wrap;
+  }
+  .top-bar h1 { font-size: 17px; font-weight: 700; color: #fff; }
+  .top-bar h1 span { font-size: 12px; font-weight: 400; color: #555; margin-left: 6px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer; transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn:hover:not(:disabled) { opacity: 0.85; }
+  .btn-google { background: #fff; color: #333; }
+  .btn-yt     { background: #ff0000; color: #fff; }
+  .btn-green  { background: #16a34a; color: #fff; }
+  .btn-gray   { background: #2a2a3a; color: #aaa; }
+
+  .upload-label {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #7c3aed; color: white;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+  .upload-label:hover { background: #6d28d9; }
+  #file-input { display: none; }
+
+  /* Steps */
+  .steps {
+    display: flex;
+    padding: 16px 20px;
+    gap: 0;
+    border-bottom: 1px solid #2a2a3a;
+    overflow-x: auto;
+  }
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #555; flex-shrink: 0;
+  }
+  .step.active { color: #e8e8f0; }
+  .step.done   { color: #16a34a; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #2a2a3a; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step.active .step-num { background: #7c3aed; color: #fff; }
+  .step.done   .step-num { background: #16a34a; color: #fff; }
+  .step-arrow { color: #333; margin: 0 10px; font-size: 16px; }
+
+  /* Main content */
+  .main { padding: 20px; max-width: 700px; margin: 0 auto; }
+
+  .card {
+    background: #1a1a24;
+    border: 1px solid #2a2a3a;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 14px; font-weight: 700; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    background: #7c3aed22; color: #a78bfa; font-weight: 600;
+  }
+
+  /* Status box */
+  #status-box {
+    background: #14141e;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #888;
+    display: none;
+  }
+  #status-box.visible { display: block; }
+  #status-text { line-height: 1.6; }
+
+  /* Progress */
+  .progress-wrap { margin-top: 10px; }
+  .progress-bar-bg {
+    background: #2a2a3a; border-radius: 100px;
+    height: 8px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, #7c3aed, #ff0000);
+    border-radius: 100px; transition: width 0.4s;
+    width: 0%;
+  }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: #555; margin-top: 6px;
+  }
+
+  /* Playlist name input */
+  .input-field {
+    width: 100%;
+    background: #14141e;
+    border: 1px solid #2a2a3a;
+    color: #e8e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 12px;
+  }
+  .input-field:focus { border-color: #7c3aed; }
+  .input-field::placeholder { color: #555; }
+
+  /* Stats */
+  .stats-row {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    padding: 12px 20px;
+    background: #14141e;
+    border-bottom: 1px solid #2a2a3a;
+    font-size: 13px; color: #888;
+    display: none;
+  }
+  .stats-row b { color: #e8e8f0; }
+
+  /* Song list preview */
+  #lista { list-style: none; padding: 0 20px 60px; }
+  .song {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 8px; border-radius: 8px;
+    border: 1px solid transparent; margin-bottom: 3px;
+  }
+  .song.added { border-color: #16a34a33; background: #16a34a0a; }
+  .song.failed { border-color: #ef444433; background: #ef44440a; }
+  .song-num { font-size: 11px; color: #444; min-width: 26px; text-align: right; flex-shrink: 0; }
+  .thumb { width: 40px; height: 40px; border-radius: 5px; object-fit: cover; flex-shrink: 0; background: #1a1a24; }
+  .info { flex: 1; overflow: hidden; }
+  .title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artist { font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .song-status { font-size: 18px; flex-shrink: 0; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: #1a1a2e; border: 1px solid #3a3a5a;
+    color: #e8e8f0; padding: 10px 20px; border-radius: 30px;
+    font-size: 13px; opacity: 0; transition: all 0.3s;
+    z-index: 9999; white-space: nowrap; max-width: 90vw;
+    text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .result-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #ff4444; text-decoration: none; font-weight: 600;
+    font-size: 14px; margin-top: 10px;
+  }
+  .result-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <h1>🎵 Crear Playlist en YouTube <span id="user-name"></span></h1>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-google" id="btn-login" onclick="iniciarLogin()">
+      <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Conectar con Google
+    </button>
+    <button class="btn btn-gray" id="btn-logout" onclick="cerrarSesion()" style="display:none">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- Steps indicator -->
+<div class="steps">
+  <div class="step active" id="step1"><div class="step-num">1</div> Conectar Google</div>
+  <div class="step-arrow">›</div>
+  <div class="step" id="step2"><div class="step-num">2</div> Cargar CSV</div>
+  <div class="step-arrow">›</div>
+  <div class="step" id="step3"><div class="step-num">3</div> Crear playlist</div>
+  <div class="step-arrow">›</div>
+  <div class="step" id="step4"><div class="step-num">4</div> ¡Listo!</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row" id="stats-row">
+  <span>🎵 Total: <b id="s-total">0</b></span>
+  <span>✅ Agregadas: <b id="s-added">0</b></span>
+  <span>❌ Fallidas: <b id="s-failed">0</b></span>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Step 1: Login -->
+  <div class="card" id="card-login">
+    <div class="card-title">🔑 Paso 1 — Conecta tu cuenta de Google <span class="badge">Requerido</span></div>
+    <p style="font-size:13px;color:#888;line-height:1.6;margin-bottom:14px;">
+      Necesitas conectar tu cuenta para que podamos crear la playlist en tu YouTube.
+      Solo se piden permisos para manejar tus playlists.
+    </p>
+    <button class="btn btn-google" onclick="iniciarLogin()">
+      <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Conectar con Google
+    </button>
+  </div>
+
+  <!-- Step 2: CSV -->
+  <div class="card" id="card-csv" style="opacity:0.4;pointer-events:none;">
+    <div class="card-title">📂 Paso 2 — Carga tu CSV</div>
+    <label class="upload-label" for="file-input">📂 Seleccionar archivo CSV</label>
+    <input type="file" id="file-input" accept=".csv,.txt" onchange="cargarCSV(event)">
+    <p id="csv-status" style="font-size:12px;color:#555;margin-top:10px;">Ningún archivo cargado</p>
+  </div>
+
+  <!-- Step 3: Create playlist -->
+  <div class="card" id="card-create" style="opacity:0.4;pointer-events:none;">
+    <div class="card-title">🚀 Paso 3 — Crear la playlist</div>
+    <input class="input-field" type="text" id="playlist-name" placeholder="Nombre de la playlist (ej: Mis 800 canciones)" value="Mi Playlist desde CSV">
+    <textarea class="input-field" id="playlist-desc" placeholder="Descripción (opcional)" rows="2" style="resize:vertical;"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-yt" id="btn-crear" onclick="crearPlaylist()" disabled>
+        ▶ Crear playlist y agregar todos los videos
+      </button>
+      <button class="btn btn-gray" id="btn-stop" onclick="detener()" style="display:none">⏹ Detener</button>
+    </div>
+  </div>
+
+  <!-- Status / progress -->
+  <div id="status-box">
+    <div id="status-text">Iniciando...</div>
+    <div class="progress-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-label">
+        <span id="progress-label-left">0 / 0</span>
+        <span id="progress-label-right">0%</span>
+      </div>
+    </div>
+    <div id="result-area"></div>
+  </div>
+
+</div>
+
+<!-- Song list -->
+<ul id="lista"></ul>
+<div id="toast"></div>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────
+const CLIENT_ID = '548261203146-h9ua81ann72tbeb9g3san75vkmlnfo1t.apps.googleusercontent.com';
+const SCOPES    = 'https://www.googleapis.com/auth/youtube';
+
+// ─── STATE ───────────────────────────────────────────────────
+let accessToken  = null;
+let playlist     = [];
+let stopFlag     = false;
+let addedCount   = 0;
+let failedCount  = 0;
+let playlistId   = null;
+
+// ─── OAUTH ───────────────────────────────────────────────────
+function iniciarLogin() {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (resp) => {
+      if (resp.error) { toast('❌ Error: ' + resp.error); return; }
+      accessToken = resp.access_token;
+      onLoginSuccess();
+    }
+  });
+  client.requestAccessToken();
+}
+
+function onLoginSuccess() {
+  // Obtener nombre del usuario
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  }).then(r => r.json()).then(u => {
+    document.getElementById('user-name').textContent = '— ' + (u.name || u.email || '');
+  });
+
+  document.getElementById('btn-login').style.display  = 'none';
+  document.getElementById('btn-logout').style.display = 'inline-flex';
+  document.getElementById('card-login').style.opacity = '1';
+  document.getElementById('card-login').innerHTML =
+    '<div class="card-title">✅ Conectado a Google</div>' +
+    '<p style="font-size:13px;color:#16a34a;">Tu cuenta está conectada correctamente.</p>';
+
+  habilitarCSV();
+  setStep(2);
+  toast('✅ Conectado con Google');
+}
+
+function cerrarSesion() {
+  accessToken = null;
+  document.getElementById('btn-login').style.display  = 'inline-flex';
+  document.getElementById('btn-logout').style.display = 'none';
+  document.getElementById('user-name').textContent    = '';
+  location.reload();
+}
+
+// ─── CSV ─────────────────────────────────────────────────────
+function habilitarCSV() {
+  const c = document.getElementById('card-csv');
+  c.style.opacity = '1';
+  c.style.pointerEvents = 'auto';
+}
+
+function cargarCSV(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => procesarTexto(ev.target.result, file.name);
+  reader.readAsText(file, 'UTF-8');
+}
+
+function procesarTexto(texto, nombre) {
+  texto = texto.replace(/\r/g, '');
+  const lineas = texto.split('\n').filter(l => l.trim());
+  if (lineas.length < 2) { toast('⚠️ Archivo vacío'); return; }
+
+  let sep = ',';
+  const primera = lineas[0];
+  if ((primera.match(/;/g)||[]).length > (primera.match(/,/g)||[]).length) sep = ';';
+  else if ((primera.match(/\t/g)||[]).length > 2) sep = '\t';
+
+  const headers = splitLinea(primera, sep).map(h => h.trim().toLowerCase());
+
+  const idx = {
+    id:     col(headers, ['mediaid','videoid','id','ytid']),
+    title:  col(headers, ['title','titulo','name','track','song']),
+    artist: col(headers, ['artists','artist','artista','band','author']),
+    thumb:  col(headers, ['thumbnailurl','thumbnail','image','img']),
+    dur:    col(headers, ['duration','duracion','seconds','length']),
+  };
+
+  if (idx.id < 0 || idx.title < 0) {
+    toast('⚠️ No se reconoció el formato del CSV');
+    return;
+  }
+
+  playlist = [];
+  for (let i = 1; i < lineas.length; i++) {
+    const cols = splitLinea(lineas[i], sep);
+    let rawId = (cols[idx.id] || '').trim();
+    const m = rawId.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+    const vid = m ? m[1] : (rawId.length === 11 ? rawId : '');
+    if (!vid) continue;
+    let titulo = (cols[idx.title] || 'Sin título').trim();
+    if (titulo.startsWith('e:')) titulo = titulo.slice(2).trim();
+    playlist.push({
+      id: vid,
+      title: titulo,
+      artist: idx.artist >= 0 ? (cols[idx.artist] || '').trim() : '',
+      thumb:  idx.thumb  >= 0 ? (cols[idx.thumb]  || '').trim() : '',
+      status: 'pending'
+    });
+  }
+
+  if (playlist.length === 0) { toast('⚠️ No se encontraron videos válidos'); return; }
+
+  document.getElementById('csv-status').textContent = '✅ ' + playlist.length + ' canciones listas — ' + nombre;
+  document.getElementById('csv-status').style.color = '#16a34a';
+
+  // Habilitar step 3
+  const c3 = document.getElementById('card-create');
+  c3.style.opacity = '1';
+  c3.style.pointerEvents = 'auto';
+  document.getElementById('btn-crear').disabled = false;
+
+  // Mostrar stats
+  document.getElementById('stats-row').style.display = 'flex';
+  document.getElementById('s-total').textContent = playlist.length;
+
+  renderLista();
+  setStep(3);
+  toast('✅ ' + playlist.length + ' canciones cargadas');
+}
+
+function col(headers, cands) {
+  for (const c of cands) {
+    const i = headers.findIndex(h => h.includes(c));
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+
+function splitLinea(linea, sep) {
+  const cols = []; let inQ = false, cur = '';
+  for (const ch of linea) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === sep && !inQ) { cols.push(cur.replace(/^"|"$/g,'')); cur = ''; }
+    else cur += ch;
+  }
+  cols.push(cur.replace(/^"|"$/g,''));
+  return cols;
+}
+
+// ─── CREAR PLAYLIST ──────────────────────────────────────────
+async function crearPlaylist() {
+  if (!accessToken) { toast('Primero conecta tu cuenta Google'); return; }
+  if (!playlist.length) { toast('Primero carga un CSV'); return; }
+
+  const nombre = document.getElementById('playlist-name').value.trim() || 'Mi Playlist';
+  const desc   = document.getElementById('playlist-desc').value.trim();
+
+  document.getElementById('btn-crear').disabled = true;
+  document.getElementById('btn-stop').style.display = 'inline-flex';
+  stopFlag = false;
+  addedCount = 0;
+  failedCount = 0;
+
+  const sb = document.getElementById('status-box');
+  sb.classList.add('visible');
+  document.getElementById('progress-wrap').style.display = 'block';
+
+  setStatus('Creando la playlist en YouTube...');
+
+  // 1. Crear la playlist
+  try {
+    const res = await fetch('https://www.googleapis.com/youtube/v3/playlists?part=snippet,status', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        snippet: { title: nombre, description: desc },
+        status: { privacyStatus: 'private' }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Error al crear playlist');
+    playlistId = data.id;
+    setStatus('✅ Playlist creada. Agregando ' + playlist.length + ' videos...');
+  } catch(e) {
+    setStatus('❌ Error creando playlist: ' + e.message);
+    document.getElementById('btn-crear').disabled = false;
+    document.getElementById('btn-stop').style.display = 'none';
+    return;
+  }
+
+  // 2. Agregar videos uno por uno
+  for (let i = 0; i < playlist.length; i++) {
+    if (stopFlag) {
+      setStatus('⏹ Detenido en ' + i + '/' + playlist.length);
+      break;
+    }
+
+    const cancion = playlist[i];
+    const pct = Math.round(((i+1) / playlist.length) * 100);
+    setProgress(i+1, playlist.length, pct);
+    setStatus('Agregando ' + (i+1) + ' de ' + playlist.length + ': ' + cancion.title);
+
+    const ok = await agregarVideo(playlistId, cancion.id);
+    cancion.status = ok ? 'added' : 'failed';
+    if (ok) addedCount++;
+    else    failedCount++;
+
+    actualizarStats();
+    actualizarSongStatus(cancion.id, cancion.status);
+
+    // Esperar un poco para no saturar la API (quota)
+    await sleep(300);
+  }
+
+  // 3. Listo
+  document.getElementById('btn-stop').style.display = 'none';
+  document.getElementById('btn-crear').disabled = false;
+  setStep(4);
+
+  const plUrl = 'https://www.youtube.com/playlist?list=' + playlistId;
+  document.getElementById('result-area').innerHTML =
+    '<a class="result-link" href="' + plUrl + '" target="_blank">▶ Abrir mi playlist en YouTube (' + addedCount + ' videos)</a>';
+
+  setStatus('🎉 ¡Listo! ' + addedCount + ' videos agregados, ' + failedCount + ' no disponibles.');
+  toast('🎉 Playlist creada con ' + addedCount + ' canciones');
+}
+
+async function agregarVideo(plId, videoId) {
+  try {
+    const res = await fetch('https://www.googleapis.com/youtube/v3/playlistItems?part=snippet', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        snippet: {
+          playlistId: plId,
+          resourceId: { kind: 'youtube#video', videoId: videoId }
+        }
+      })
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
+function detener() { stopFlag = true; }
+
+// ─── UI HELPERS ──────────────────────────────────────────────
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active','done');
+    if (i < n)  el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+}
+
+function setStatus(msg) {
+  document.getElementById('status-text').textContent = msg;
+}
+
+function setProgress(current, total, pct) {
+  document.getElementById('progress-fill').style.width     = pct + '%';
+  document.getElementById('progress-label-left').textContent  = current + ' / ' + total;
+  document.getElementById('progress-label-right').textContent = pct + '%';
+}
+
+function actualizarStats() {
+  document.getElementById('s-added').textContent  = addedCount;
+  document.getElementById('s-failed').textContent = failedCount;
+}
+
+function actualizarSongStatus(id, status) {
+  const li = document.getElementById('song-' + id);
+  if (!li) return;
+  li.classList.remove('added','failed');
+  li.classList.add(status);
+  const s = li.querySelector('.song-status');
+  if (s) s.textContent = status === 'added' ? '✅' : status === 'failed' ? '❌' : '⏳';
+}
+
+function renderLista() {
+  const ul = document.getElementById('lista');
+  ul.innerHTML = '';
+  playlist.forEach((c, i) => {
+    const li = document.createElement('li');
+    li.className = 'song';
+    li.id = 'song-' + c.id;
+    const thumb = c.thumb || ('https://img.youtube.com/vi/' + c.id + '/default.jpg');
+    li.innerHTML =
+      '<span class="song-num">' + (i+1) + '</span>' +
+      '<img class="thumb" src="' + thumb + '" loading="lazy" onerror="this.src=\'https://img.youtube.com/vi/' + c.id + '/default.jpg\'">' +
+      '<div class="info">' +
+        '<div class="title">' + esc(c.title) + '</div>' +
+        '<div class="artist">' + esc(c.artist) + '</div>' +
+      '</div>' +
+      '<span class="song-status">⏳</span>';
+    ul.appendChild(li);
+  });
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+let _t;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_t);
+  _t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
